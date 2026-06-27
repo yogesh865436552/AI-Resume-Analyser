@@ -61,3 +61,18 @@ company_name = st.text_input(
     "Company you are applying to (optional):",
     placeholder="e.g. Google, Infosys, Swiggy, TCS..."
 )
+
+if st.button("Analyse Resume"):
+    resume_text = extract_text_from_pdf(uploaded_file)
+    result = analyse_resume(resume_text, job_desc, company_name)
+
+    #pull the score number out of the response
+    score_match = re.research(r"MATCH_SCORE:\s*(\d+)%", result)
+    if score_match:
+        score = int(score_match.group(1))
+        clean_result = re.sub(r"MATCH_SCORE:\s*\d+%", "", result).strip()
+        st.write(f"Score: {score}%")
+        st.markdown(clean_result)
+
+
+    
