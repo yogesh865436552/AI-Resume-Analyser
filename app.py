@@ -4,6 +4,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 import re
+import time
 
 st.title("AI Resume Analyser")
 st.write("Upload your resume and get feedback.")
@@ -41,11 +42,26 @@ def analyze_resume(resume_text, job_description, company_name=""):
     RESUME: {resume_text}
     JOB: {job_description}
     """
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt,
-    )
-    return response.text
+    # kept getting 503 on pro so added flash as fallback
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
+
+    for model_name in models_to_try:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                return response.text
+            except Exception as e:
+                if "503" in str(e):
+                    wait = (attempt + 1) * 3
+                    st.info(f"Servers busy, retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    return f"Something went wrong: {e}"
+        st.warning(f"{model_name} not responding, trying next model...")
+    return "Both models overloaded. Try again in a minute."
 
 uploaded_file = st.file_uploader("Upload your resume PDF", type=["pdf"])
 if uploaded_file:
@@ -71,7 +87,6 @@ if st.button("Analyse Resume"):
         score = int(score_match.group(1))
         clean_result = re.sub(r"MATCH_SCORE:\s*\d+%", "", result).strip()
 
-        # colour coded so user knows at a glance how good their match is
         if score >= 85:
             st.success(f"Strong match: {score}%")
         elif score >= 60:
