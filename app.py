@@ -3,6 +3,7 @@ from pypdf import PdfReader
 from google import genai
 from dotenv import load_dotenv
 import os
+import re
 
 st.title("AI Resume Analyser")
 st.write("Upload your resume and get feedback.")
@@ -25,7 +26,6 @@ def extract_text_from_pdf(uploaded_file):
             text += page_text + "\n"
     return text
 
-# basic analysis - just testing if API responds correctly first
 def analyze_resume(resume_text, job_description, company_name=""):
     company_context = ""
     if company_name.strip():
@@ -64,15 +64,19 @@ company_name = st.text_input(
 
 if st.button("Analyse Resume"):
     resume_text = extract_text_from_pdf(uploaded_file)
-    result = analyse_resume(resume_text, job_desc, company_name)
+    result = analyze_resume(resume_text, job_desc, company_name)
+    score_match = re.search(r"MATCH_SCORE:\s*(\d+)%", result)
 
-    #pull the score number out of the response
-    score_match = re.research(r"MATCH_SCORE:\s*(\d+)%", result)
     if score_match:
         score = int(score_match.group(1))
         clean_result = re.sub(r"MATCH_SCORE:\s*\d+%", "", result).strip()
-        st.write(f"Score: {score}%")
+
+        # colour coded so user knows at a glance how good their match is
+        if score >= 85:
+            st.success(f"Strong match: {score}%")
+        elif score >= 60:
+            st.warning(f"Partial match: {score}%")
+        else:
+            st.error(f"Low match: {score}%")
+
         st.markdown(clean_result)
-
-
-    
