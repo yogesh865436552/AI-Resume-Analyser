@@ -21,8 +21,8 @@ the company name — get an honest match score and feedback.
 Python, Streamlit, Gemini API, pypdf, python-dotenv
 
 ##  How to use
-pip install -r requirements.txt
-streamlit run app.py
+-> pip install -r requirements.txt
+-> streamlit run app.py
 
 ## Author
 Yogesh Madhukumar — still learning, building as I go 🚀
