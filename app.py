@@ -6,6 +6,12 @@ import os
 import re
 import time
 
+st.set_page_config(
+    page_title="AI Resume Analyser",
+    page_icon="🎯",
+    layout="wide"
+)
+
 st.title("AI Resume Analyser")
 st.write("Upload your resume and get feedback.")
 
@@ -42,7 +48,6 @@ def analyze_resume(resume_text, job_description, company_name=""):
     RESUME: {resume_text}
     JOB: {job_description}
     """
-    # kept getting 503 on pro so added flash as fallback
     models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
 
     for model_name in models_to_try:
@@ -63,42 +68,61 @@ def analyze_resume(resume_text, job_description, company_name=""):
         st.warning(f"{model_name} not responding, trying next model...")
     return "Both models overloaded. Try again in a minute."
 
-uploaded_file = st.file_uploader("Upload your resume PDF", type=["pdf"])
-if uploaded_file:
-    st.success(f"Loaded: {uploaded_file.name}")
+# two column layout - cleaner than stacking everything vertically
+col1, col2 = st.columns(2)
 
-job_desc = st.text_area(
-    "Paste the job posting here:",
-    height=250,
-    placeholder="Copy and paste the full job description..."
-)
+with col1:
+    st.subheader("Job Description")
+    job_desc = st.text_area(
+        "Paste the job posting here:",
+        height=250,
+        placeholder="Copy and paste the full job description..."
+    )
+    company_name = st.text_input(
+        "Company you are applying to (optional):",
+        placeholder="e.g. Google, Infosys, Swiggy, TCS..."
+    )
 
-company_name = st.text_input(
-    "Company you are applying to (optional):",
-    placeholder="e.g. Google, Infosys, Swiggy, TCS..."
-)
+with col2:
+    st.subheader("Your Resume (PDF)")
+    uploaded_file = st.file_uploader(
+        "Upload your resume as a PDF",
+        type=["pdf"],
+        accept_multiple_files=False
+    )
+    if uploaded_file:
+        st.success(f"Loaded: {uploaded_file.name}")
 
-if st.button("Analyse Resume"):
-    resume_text = extract_text_from_pdf(uploaded_file)
-    result = analyze_resume(resume_text, job_desc, company_name)
-    score_match = re.search(r"MATCH_SCORE:\s*(\d+)%", result)
+st.markdown("---")
 
-    if score_match:
-        score = int(score_match.group(1))
-        clean_result = re.sub(r"MATCH_SCORE:\s*\d+%", "", result).strip()
+if st.button("Analyse Resume", use_container_width=True):
+    if not job_desc.strip():
+        st.warning("Please paste a job description first.")
+    elif not uploaded_file:
+        st.warning("Please upload your resume PDF.")
+    elif not client:
+        st.error("API key missing. Check your .env file.")
+    else:
+        with st.spinner("Analysing your resume..."):
+            resume_text = extract_text_from_pdf(uploaded_file)
+            result = analyze_resume(resume_text, job_desc, company_name)
+            score_match = re.search(r"MATCH_SCORE:\s*(\d+)%", result)
 
-        if score >= 85:
-            st.success(f"Strong match: {score}%")
-        elif score >= 60:
-            st.warning(f"Partial match: {score}%")
-        else:
-            st.error(f"Low match: {score}%")
+            if score_match:
+                score = int(score_match.group(1))
+                clean_result = re.sub(r"MATCH_SCORE:\s*\d+%", "", result).strip()
 
-        
-        # split into two tabs for cleaner output
-        tab1. tab2 = st.tabs(["Full Analysis", "Git commit Sugesstions"])
-        with tab1:
-            st.markdown(clean_result)
-        with tab2:
-            st.info("Push these commits to show hands-on experience.")
-            
+                if score >= 85:
+                    st.success(f"Strong match: {score}%")
+                elif score >= 60:
+                    st.warning(f"Partial match: {score}%")
+                else:
+                    st.error(f"Low match: {score}%")
+
+                tab1, tab2 = st.tabs(["Full Analysis", "Git Commit Suggestions"])
+                with tab1:
+                    st.markdown(clean_result)
+                with tab2:
+                    st.info("Push these commits to show hands-on experience.")
+            else:
+                st.markdown(result)
