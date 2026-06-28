@@ -15,6 +15,7 @@ st.set_page_config(
 st.title("AI Resume Analyser")
 st.write("Upload your resume and get feedback.")
 
+# load API key from .env file - dont hardcode this
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -25,6 +26,7 @@ except Exception as e:
     client = None
 
 def extract_text_from_pdf(uploaded_file):
+    # reads each page - some pages return None so checking that
     reader = PdfReader(uploaded_file)
     text = ""
     for page in reader.pages:
@@ -42,12 +44,48 @@ def analyze_resume(resume_text, job_description, company_name=""):
     based on their known hiring culture and tech stack.
     """
     prompt = f"""
-    Review this resume against the job description.
-    Start with: MATCH_SCORE: [0-100]%
-    {company_context}
-    RESUME: {resume_text}
-    JOB: {job_description}
-    """
+You are a senior engineering hiring manager reviewing a resume.
+Be direct and practical.
+
+Start your response with exactly this line:
+MATCH_SCORE: [number 0-100]%
+
+Then give feedback in this format:
+
+### Profile Fit Summary
+2-3 honest sentences on whether this person fits the role.
+
+### Missing Skills
+What is clearly missing compared to the job description?
+
+### Resume Line Rewrite
+Pick one weak bullet and rewrite it stronger.
+- Original: "[weak line]"
+- Rewrite: "[stronger version with impact]"
+
+### Git Commit Suggestions
+Write 3 realistic git commits the candidate should push to prove
+they have hands-on experience with the missing skills:
+- feat(...): ...
+- fix(...): ...
+- feat(...): ...
+
+### What To Do Next
+3 practical steps they can take this week.
+
+---
+RESUME:
+{resume_text}
+
+---
+JOB DESCRIPTION:
+{job_description}
+
+---
+COMPANY: {company_name if company_name.strip() else "Not specified"}
+{company_context}
+"""
+    # kept getting 503 on pro so added flash as fallback
     models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
 
     for model_name in models_to_try:
@@ -68,7 +106,7 @@ def analyze_resume(resume_text, job_description, company_name=""):
         st.warning(f"{model_name} not responding, trying next model...")
     return "Both models overloaded. Try again in a minute."
 
-# two column layout - cleaner than stacking everything vertically
+# two column layout
 col1, col2 = st.columns(2)
 
 with col1:
@@ -118,18 +156,18 @@ if st.button("Analyse Resume", use_container_width=True):
                     st.warning(f"Partial match: {score}%")
                 else:
                     st.error(f"Low match: {score}%")
-                    
+
                 if clean_result.strip():
                     tab1, tab2 = st.tabs(["Full Analysis", "Git Commit Suggestions"])
                     with tab1:
                         st.markdown(clean_result)
                     with tab2:
-                        st.info("Push these commits to show hands-on experience.")
+                        st.info("Build these features and push with these commit messages to prove hands-on experience with missing skills.")
                 else:
                     st.warning("Analysis came back empty. Try again.")
-            else: 
+            else:
                 st.markdown(result)
 
-#footer               
+# footer
 st.markdown("---")
 st.write("Made by Yogesh Madhukumar — learning by building 🚀")
