@@ -118,13 +118,16 @@ if st.button("Analyse Resume", use_container_width=True):
                     st.warning(f"Partial match: {score}%")
                 else:
                     st.error(f"Low match: {score}%")
-
-                tab1, tab2 = st.tabs(["Full Analysis", "Git Commit Suggestions"])
-                with tab1:
-                    st.markdown(clean_result)
-                with tab2:
-                    st.info("Push these commits to show hands-on experience.")
-            else:
+                    
+                if clean_result.strip():
+                    tab1, tab2 = st.tabs(["Full Analysis", "Git Commit Suggestions"])
+                    with tab1:
+                        st.markdown(clean_result)
+                    with tab2:
+                        st.info("Push these commits to show hands-on experience.")
+                else:
+                    st.warning("Analysis came back empty. Try again.")
+            else: 
                 st.markdown(result)
 
 #footer               
