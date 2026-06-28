@@ -126,3 +126,7 @@ if st.button("Analyse Resume", use_container_width=True):
                     st.info("Push these commits to show hands-on experience.")
             else:
                 st.markdown(result)
+
+#footer               
+st.markdown("---")
+st.write("Made by Yogesh Madhukumar — learning by building 🚀")
