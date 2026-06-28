@@ -94,4 +94,11 @@ if st.button("Analyse Resume"):
         else:
             st.error(f"Low match: {score}%")
 
-        st.markdown(clean_result)
+        
+        # split into two tabs for cleaner output
+        tab1. tab2 = st.tabs(["Full Analysis", "Git commit Sugesstions"])
+        with tab1:
+            st.markdown(clean_result)
+        with tab2:
+            st.info("Push these commits to show hands-on experience.")
+            
