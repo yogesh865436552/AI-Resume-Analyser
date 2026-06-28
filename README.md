@@ -20,7 +20,7 @@ the company name — get an honest match score and feedback.
 ## Tech used
 Python, Streamlit, Gemini API, pypdf, python-dotenv
 
-## How to run
+##  How to use
 pip install -r requirements.txt
 streamlit run app.py
 
